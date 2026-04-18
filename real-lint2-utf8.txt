@@ -1,0 +1,41 @@
+﻿
+> smart-clinic-web@0.1.0 lint
+> eslint
+
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\clinics\page.tsx
+  14:11  warning  't' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\doctor\prescriptions\page.tsx
+  10:7  warning  'prescriptionRepo' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\patient\appointments\page.tsx
+  9:11  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\patient\dashboard\page.tsx
+  11:25  warning  'isLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\patient\history\page.tsx
+  52:33  warning  'index' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebaseClinicRepository.ts
+  77:27  warning  '_clinicId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:46  warning  '_doctorId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:65  warning  '_date' is defined but never used      @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebaseMedicalHistoryRepository.ts
+  18:10  warning  'Collections' is defined but never used   @typescript-eslint/no-unused-vars
+  59:38  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:59  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebasePrescriptionRepository.ts
+  86:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\hooks\useAppointments.ts
+  27:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\use-cases\appointments\DoctorAppointmentsUseCase.ts
+  15:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 14 problems (5 errors, 9 warnings)
+

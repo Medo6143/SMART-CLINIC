@@ -1,0 +1,114 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "noResults": "No results found",
+    "confirmDelete": "Are you sure you want to delete this?"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "loginTitle": "Welcome Back",
+    "loginSubtitle": "Sign in to your Smart Clinic account",
+    "registerTitle": "Create Account",
+    "registerSubtitle": "Join Smart Clinic today",
+    "googleSignIn": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "forgotPassword": "Forgot Password?",
+    "signOut": "Sign Out"
+  },
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "appointments": "Appointments",
+    "medicalHistory": "Medical History",
+    "chat": "Chat",
+    "profile": "Profile",
+    "bookAppointment": "Book Appointment"
+  },
+  "landing": {
+    "heroTitle": "Book Your Consultation Online in Minutes",
+    "heroSubtitle": "An integrated system combining medical precision with technological ease. Connect with your favorite doctor from home safely and securely.",
+    "ctaBook": "Book Online Now",
+    "ctaLearnMore": "See How It Works",
+    "aboutDoctor": {
+      "title": "Dr. Ahmed Ali",
+      "specialty": "Orthopedic Surgery & Joint Consultant",
+      "bio": "A pioneer in medical technology and digital healthcare delivery. Holder of the British Fellowship in Joint Surgery, he always strives to facilitate the patient experience through smart, innovative solutions that ensure quality and comfort.",
+      "experience": "+15 Years Experience",
+      "education": "MD - Cairo University",
+      "award": "Best Digital Doctor 2023"
+    },
+    "servicesTitle": "Our Advanced Services",
+    "servicesSubtitle": "We offer a complete suite of digital medical services designed to fit your modern lifestyle.",
+    "services": {
+      "online": {
+        "title": "Online Consultation",
+        "desc": "High-quality direct visual consultation with the doctor without needing to visit the clinic."
+      },
+      "followup": {
+        "title": "Case Follow-up",
+        "desc": "Regular monitoring of your health status with continuous digital updates to your treatment plan."
+      },
+      "prescription": {
+        "title": "E-Prescription",
+        "desc": "Receive your medical prescription directly on your app with the option to send it to the pharmacy."
+      },
+      "instant": {
+        "title": "Instant Consultation",
+        "desc": "For emergencies, connect with our medical team available 24/7."
+      }
+    },
+    "journey": {
+      "title": "How to Start Your Journey?",
+      "step1": "Register Account",
+      "step2": "Choose Appointment",
+      "step3": "Pay Securely",
+      "step4": "Start Consultation"
+    },
+    "testimonialsTitle": "What Our Patients Say?"
+  },
+  "appointments": {
+    "book": "Book Appointment",
+    "myAppointments": "My Appointments",
+    "selectClinic": "Select Clinic",
+    "selectDoctor": "Select Doctor",
+    "selectSlot": "Select Time Slot",
+    "confirmBooking": "Confirm Booking",
+    "status": {
+      "pending_payment": "Pending Payment",
+      "confirmed": "Confirmed",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No Show"
+    },
+    "type": {
+      "in_person": "In Person",
+      "online": "Online"
+    },
+    "priority": {
+      "normal": "Normal",
+      "urgent": "Urgent",
+      "emergency": "Emergency"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "editProfile": "Edit Profile",
+    "phone": "Phone Number",
+    "language": "Language",
+    "medicalHistory": "Medical History"
+  }
+}

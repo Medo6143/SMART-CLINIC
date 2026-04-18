@@ -1,0 +1,22 @@
+﻿
+> smart-clinic-web@0.1.0 lint
+> eslint
+
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\doctor\prescriptions\page.tsx
+  5:10  warning  'FirebasePrescriptionRepository' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\patient\appointments\page.tsx
+  6:10  warning  'useAuth' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebaseClinicRepository.ts
+  77:27  warning  '_clinicId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:46  warning  '_doctorId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:65  warning  '_date' is defined but never used      @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\hooks\useAppointments.ts
+  26:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 7 problems (2 errors, 5 warnings)
+

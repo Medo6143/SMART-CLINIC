@@ -1,0 +1,26 @@
+﻿
+> smart-clinic-web@0.1.0 lint
+> eslint
+
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\app\doctor\dashboard\page.tsx
+  7:11  warning  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebaseChatRepository.ts
+  102:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\data\repositories\FirebaseClinicRepository.ts
+  77:27  warning  '_clinicId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:46  warning  '_doctorId' is defined but never used  @typescript-eslint/no-unused-vars
+  77:65  warning  '_date' is defined but never used      @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\guards\AuthGuard.tsx
+  3:21  warning  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\medow\OneDrive\Desktop\smart-clinic\smart-clinic-web\src\guards\RoleGuard.tsx
+   3:21  warning  'useState' is defined but never used      @typescript-eslint/no-unused-vars
+  15:67  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 9 problems (3 errors, 6 warnings)
+

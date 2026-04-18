@@ -1,0 +1,6 @@
+﻿src/components/appointments/BookAppointmentForm.tsx(128,51): error TS2345: Argument of type '{ patientId: string; patientName: string; patientPhone: any; patientEmail: string; doctorId: string; doctorName: string; clinicId: string; date: Date; slotTime: string; type: "in_person"; ... 11 more ...; notes: string; }' is not assignable to parameter of type 'CreateAppointmentInput'.
+  Property 'status' is missing in type '{ patientId: string; patientName: string; patientPhone: any; patientEmail: string; doctorId: string; doctorName: string; clinicId: string; date: Date; slotTime: string; type: "in_person"; ... 11 more ...; notes: string; }' but required in type 'CreateAppointmentInput'.
+src/components/appointments/BookingWizard.tsx(165,9): error TS2322: Type '"card" | "wallet" | "fawry"' is not assignable to type '"card" | "wallet" | "cash"'.
+  Type '"fawry"' is not assignable to type '"card" | "wallet" | "cash"'.
+src/components/appointments/BookingWizard.tsx(190,15): error TS2339: Property 'paymentToken' does not exist on type 'Promise<any>'.
+src/components/appointments/BookingWizard.tsx(190,36): error TS2339: Property 'error' does not exist on type 'Promise<any>'.
