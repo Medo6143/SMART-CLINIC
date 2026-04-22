@@ -273,7 +273,7 @@ export default function PatientFollowUpsPage() {
                 {fu.patientResponse && (
                   <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-4 text-xs text-gray-500">
                     <span>التحسن: <strong className="text-gray-800">{fu.patientResponse.improvementPercent}%</strong></span>
-                    <span>الدواء: <strong className="text-gray-800">{fu.patientResponse.medicationAdherence === "fully" ? "ملتزم" : fu.patientResponse.medicationAdherence === "partially" ? "جزئياً" : "غير ملتزم"}</strong></span>
+                    <span>الدواء: <strong className="text-gray-800">{fu.patientResponse.medicationAdherence === "full" ? "ملتزم" : fu.patientResponse.medicationAdherence === "partial" ? "جزئياً" : "غير ملتزم"}</strong></span>
                   </div>
                 )}
               </div>
