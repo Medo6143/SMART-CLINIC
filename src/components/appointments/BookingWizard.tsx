@@ -216,18 +216,18 @@ export function BookingWizard() {
         date,
         slotTime: selectedSlot,
         type: AppointmentTypes.ONLINE,
-        status: "pending",
+        status: "pending" as const,
         priority: AppointmentPriorities.NORMAL,
-        bookingOrigin: "online",
+        bookingOrigin: "online" as const,
         meetLink: null,
         paymentId: null,
-        paymentStatus: "unpaid",
-        paymentMethod: paymentMethodUI === "fawry" ? "wallet" : paymentMethodUI,
+        paymentStatus: "unpaid" as const,
+        paymentMethod: (paymentMethodUI === "fawry" ? "wallet" : paymentMethodUI) as "card" | "wallet",
         amount: totalAmountVal,
         paymentDeadlineAt: new Date(Date.now() + PAYMENT_DEADLINE_SECS * 1000).toISOString(),
         symptoms: symptoms || null,
         hasPreviousVisit: false,
-        notes: "",
+        notes: symptoms || "",
       };
 
       const appointmentId = await bookAppointment(appointmentData);
