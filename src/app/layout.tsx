@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Cairo } from "next/font/google";
 import { AuthProvider } from "@/providers/AuthProvider";
+import { LanguageProvider } from "@/providers/LanguageProvider";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,6 +22,13 @@ export const metadata: Metadata = {
   description:
     "Book appointments with top doctors across multiple clinics. Online consultations, secure payments, and more.",
   keywords: ["clinic", "doctor", "appointment", "healthcare", "medical", "booking"],
+  manifest: "/manifest.json",
+  themeColor: "#6366f1",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Smart Clinic",
+  },
 };
 
 export default function RootLayout({
@@ -34,7 +43,10 @@ export default function RootLayout({
       className={`${inter.variable} ${cairo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <ServiceWorkerRegister />
+        <LanguageProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

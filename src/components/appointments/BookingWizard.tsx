@@ -7,19 +7,21 @@ import { createGetAllClinicsUseCase } from "@/use-cases/clinics/index";
 import { FirebaseClinicRepository } from "@/data/repositories/FirebaseClinicRepository";
 import { createBookAppointmentUseCase } from "@/use-cases/appointments/PatientAppointmentsUseCase";
 import { FirebaseAppointmentRepository } from "@/data/repositories/FirebaseAppointmentRepository";
-import { AppointmentTypes, AppointmentPriorities, ConsultationModes } from "@/domain/value-objects/AppointmentStatus";
+import { FirebaseNotificationRepository } from "@/data/repositories/FirebaseNotificationRepository";
+import { AppointmentTypes, AppointmentPriorities } from "@/domain/value-objects/AppointmentStatus";
+import { useRouter } from "next/navigation";
 import { generateSlots, getDefaultSchedule, getDefaultClinicHours, type TimeSlot } from "@/lib/slotGeneration";
 import {
   IoVideocamOutline,
-  IoMedkitOutline,
   IoCheckmarkCircle,
   IoCardOutline,
   IoReceiptOutline,
   IoPhonePortraitOutline,
-  IoInformationCircleOutline,
   IoLockClosedOutline,
   IoCloseOutline,
   IoAlertCircleOutline,
+  IoMedkitOutline,
+  IoInformationCircleOutline,
 } from "react-icons/io5";
 
 const clinicRepo = new FirebaseClinicRepository();
@@ -27,6 +29,7 @@ const getAllClinics = createGetAllClinicsUseCase(clinicRepo);
 
 const appointmentRepo = new FirebaseAppointmentRepository();
 const bookAppointment = createBookAppointmentUseCase(appointmentRepo);
+const notificationRepo = new FirebaseNotificationRepository();
 
 const PAYMENT_DEADLINE_SECS = 30 * 60; // 30 minutes
 
@@ -49,6 +52,7 @@ function useCountdown(deadlineIso: string | null) {
 
 export function BookingWizard() {
   const { user } = useAuth();
+  const router = useRouter();
 
   // Data
   const [clinics, setClinics] = useState<Clinic[]>([]);
@@ -57,7 +61,6 @@ export function BookingWizard() {
   const [currentClinic, setCurrentClinic] = useState<Clinic | null>(null);
 
   // Selections
-  const [consultationMode, setConsultationMode] = useState<"online" | "offline">("offline");
   const [selectedClinic, setSelectedClinic] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -65,18 +68,14 @@ export function BookingWizard() {
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
   const [symptoms, setSymptoms] = useState("");
-  const [paymentMethodUI, setPaymentMethodUI] = useState<"card" | "wallet">("card");
+  const [paymentMethodUI, setPaymentMethodUI] = useState<"card" | "wallet" | "fawry">("card");
   
   const [age, setAge] = useState<string>("");
-  const [expectedTurn, setExpectedTurn] = useState<number | null>(null);
 
-  // Derived values
+  // Derived values - online only
   const selectedDoctorInfo = doctors.find(d => d.uid === selectedDoctor);
-  const isOnlineMode = consultationMode === "online";
-  const dOnline = selectedDoctorInfo?.onlineConsultationFee ?? 400;
-  const dOffline = selectedDoctorInfo?.offlineConsultationFee ?? 600;
-  const amount = isOnlineMode ? dOnline : dOffline;
-  const serviceFee = isOnlineMode ? 20 : 0;
+  const amount = selectedDoctorInfo?.onlineConsultationFee ?? 400;
+  const serviceFee = 20;
   const totalAmount = amount + serviceFee;
   
   const minDate = new Date(); minDate.setDate(minDate.getDate() + 1);
@@ -89,11 +88,10 @@ export function BookingWizard() {
   const [bookedAppointmentId, setBookedAppointmentId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [offlineBookingSuccess, setOfflineBookingSuccess] = useState(false);
 
   const { secsLeft, label: countdownLabel } = useCountdown(paymentDeadline);
 
-  const canSubmit = selectedClinic && selectedDoctor && selectedDate && (isOnlineMode ? (!!selectedSlot && !!paymentMethodUI) : true) && !isSubmitting;
+  const canSubmit = selectedClinic && selectedDoctor && selectedDate && !!selectedSlot && !!paymentMethodUI && !isSubmitting;
 
   useEffect(() => {
     if (user) {
@@ -124,6 +122,8 @@ export function BookingWizard() {
           setPaymentSuccess(true);
           setPaymentToken(null);
           setPaymentDeadline(null);
+          // Redirect to success page
+          router.push(`/patient/payment-success?appointmentId=${bookedAppointmentId}&amount=${apt.amount}&transactionId=${apt.paymobTransactionId || 'N/A'}`);
         } else if (apt && apt.paymentStatus === "failed") {
           setPaymentError("عملية الدفع فشلت، الرجاء المحاولة مرة أخرى.");
           setPaymentToken(null);
@@ -132,14 +132,15 @@ export function BookingWizard() {
       } catch (e) { /* ignore polling errors */ }
     }, 5000);
     return () => clearInterval(interval);
-  }, [bookedAppointmentId, paymentToken, paymentSuccess]);
+  }, [bookedAppointmentId, paymentToken, paymentSuccess, router]);
 
   // Listen for iframe postMessage from Paymob callback (GET)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "PAYMOB_PAYMENT_COMPLETE") {
-        if (event.data.success) {
-          setPaymentSuccess(true);
+        if (event.data.success && bookedAppointmentId) {
+          // Redirect to success page
+          router.push(`/patient/payment-success?appointmentId=${bookedAppointmentId}&transactionId=${event.data.transactionId || 'N/A'}`);
         } else {
           setPaymentError("عملية الدفع فشلت، الرجاء المحاولة مرة أخرى.");
         }
@@ -149,7 +150,7 @@ export function BookingWizard() {
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [bookedAppointmentId, router]);
 
   // Load clinics on start
   useEffect(() => {
@@ -171,7 +172,7 @@ export function BookingWizard() {
   }, [selectedClinic, clinics]);
 
   const refreshSlots = useCallback(() => {
-    if (!selectedDoctor || !selectedDate) { setSlots([]); setExpectedTurn(null); return; }
+    if (!selectedDoctor || !selectedDate) { setSlots([]); return; }
     const date = new Date(selectedDate);
     const schedule = getDefaultSchedule(selectedDoctor, selectedClinic);
     const hours = getDefaultClinicHours();
@@ -183,7 +184,6 @@ export function BookingWizard() {
           return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
         });
       setSlots(generateSlots(date, hours, schedule, bookedTimes));
-      setExpectedTurn(activeBookings.length + 1);
     });
   }, [selectedDoctor, selectedDate, selectedClinic]);
 
@@ -191,26 +191,18 @@ export function BookingWizard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedClinic || !selectedDoctor || !selectedDate) return;
-    if (isOnlineMode && !selectedSlot) return;
+    if (!user || !selectedClinic || !selectedDoctor || !selectedDate || !selectedSlot) return;
     const doctor = doctors.find((d) => d.uid === selectedDoctor);
     if (!doctor) return;
 
     setIsSubmitting(true);
     try {
       const [yr, mo, dy] = selectedDate.split("-").map(Number);
-      let date: Date;
-      if (isOnlineMode && selectedSlot) {
-        const [hr, min] = selectedSlot.split(":").map(Number);
-        date = new Date(yr, mo - 1, dy, hr, min);
-      } else {
-        date = new Date(yr, mo - 1, dy, 8, 0);
-      }
-      const isOnline = consultationMode === "online";
-      const baseOnline = doctor.onlineConsultationFee ?? 400;
-      const baseOffline = doctor.offlineConsultationFee ?? 600;
-      const amountVal = isOnline ? baseOnline : baseOffline;
-      const totalAmountVal = isOnline ? amountVal + 20 : amountVal;
+      const [hr, min] = selectedSlot.split(":").map(Number);
+      const date = new Date(yr, mo - 1, dy, hr, min);
+      
+      const baseAmount = doctor.onlineConsultationFee ?? 400;
+      const totalAmountVal = baseAmount + 20; // + service fee
 
       const appointmentData = {
         patientId: user.uid,
@@ -221,20 +213,18 @@ export function BookingWizard() {
         doctorName: doctor.displayName || "Unknown Doctor",
         clinicId: selectedClinic,
         patientAge: age ? parseInt(age) : undefined,
-        turnNumber: expectedTurn,
         date,
         slotTime: selectedSlot,
-        type: isOnline ? AppointmentTypes.ONLINE : AppointmentTypes.IN_PERSON,
-        status: isOnline ? "pending" : "pending_approval",
-        consultationMode: ConsultationModes[isOnline ? "ONLINE" : "OFFLINE"],
+        type: AppointmentTypes.ONLINE,
+        status: "pending",
         priority: AppointmentPriorities.NORMAL,
         bookingOrigin: "online",
         meetLink: null,
         paymentId: null,
-        paymentStatus: isOnline ? "unpaid" : "unpaid",
-        paymentMethod: isOnline ? (paymentMethodUI === "fawry" ? "wallet" : paymentMethodUI) : "cash",
+        paymentStatus: "unpaid",
+        paymentMethod: paymentMethodUI === "fawry" ? "wallet" : paymentMethodUI,
         amount: totalAmountVal,
-        paymentDeadlineAt: isOnline ? new Date(Date.now() + PAYMENT_DEADLINE_SECS * 1000).toISOString() : null,
+        paymentDeadlineAt: new Date(Date.now() + PAYMENT_DEADLINE_SECS * 1000).toISOString(),
         symptoms: symptoms || null,
         hasPreviousVisit: false,
         notes: "",
@@ -244,20 +234,14 @@ export function BookingWizard() {
       setBookedAppointmentId(appointmentId);
 
       // Trigger Notification for the Doctor/Clinic
-      await notificationRepository.create({
+      await notificationRepo.create({
         userId: selectedDoctor,
         title: "حجز جديد",
         message: `تم حجز موعد جديد من قبل ${patientName} الساعة ${selectedSlot}`,
         type: "appointment",
-        link: `/clinic-admin/queue`,
+        link: `/clinic-admin/appointments`,
         read: false,
       });
-
-      if (!isOnline) {
-        // Offline booking — no payment needed, show success
-        setOfflineBookingSuccess(true);
-        return;
-      }
 
       // Online booking — initiate payment
       const deadline = new Date(Date.now() + PAYMENT_DEADLINE_SECS * 1000).toISOString();
@@ -416,60 +400,6 @@ export function BookingWizard() {
               </div>
             )}
 
-            {/* Consultation Type */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-5 bg-red-500 rounded-full" />
-                <h2 className="text-base font-bold text-gray-900">اختر نوع الكشف</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                
-                {/* Online Consultation Card */}
-                <div 
-                  onClick={() => setConsultationMode("online")}
-                  className={`relative p-5 rounded-xl border transition-all cursor-pointer flex flex-col gap-3 text-center ${
-                    consultationMode === "online" ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-primary/40"
-                  }`}
-                >
-                  <div className="absolute top-3.5 left-3.5">
-                     <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
-                         {consultationMode === "online" && <div className="w-2 h-2 bg-primary rounded-full" />}
-                     </div>
-                  </div>
-                  <div className="absolute top-3 right-3 bg-teal-50 text-teal-700 text-[10px] font-semibold px-2 py-0.5 rounded-md">
-                    متاح فورا
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mt-2">
-                    <IoVideocamOutline className="text-2xl" />
-                  </div>
-                  <h3 className="font-bold text-gray-900 mt-1">كشف أونلاين</h3>
-                  <p className="text-xs text-gray-500">تواصل مع الطبيب من منزلك عبر مكالمة فيديو عالية الجودة.</p>
-                  <p className="text-lg font-bold text-primary mt-1">{selectedDoctor ? dOnline : 400} ج.م</p>
-                </div>
-
-                {/* In-Clinic Card */}
-                <div 
-                  onClick={() => setConsultationMode("offline")}
-                  className={`relative p-5 rounded-xl border transition-all cursor-pointer flex flex-col gap-3 text-center ${
-                    consultationMode === "offline" ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-primary/40"
-                  }`}
-                >
-                  <div className="absolute top-3.5 left-3.5">
-                     <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
-                         {consultationMode === "offline" && <div className="w-2 h-2 bg-primary rounded-full" />}
-                     </div>
-                  </div>
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mx-auto mt-4">
-                    <IoMedkitOutline className="text-2xl" />
-                  </div>
-                  <h3 className="font-bold text-gray-900 mt-1">كشف بالعيادة</h3>
-                  <p className="text-xs text-gray-500">زيارة مباشرة للعيادة للفحص السريري الشامل والمتابعة.</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1">{selectedDoctor ? dOffline : 600} ج.م</p>
-                </div>
-
-              </div>
-            </div>
-
             {/* Date and Time Section */}
             {/* Doctor Info Card */}
             {selectedDoctorInfo && (
@@ -493,12 +423,12 @@ export function BookingWizard() {
 
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <h2 className="text-base font-bold text-gray-900 mb-5 text-center md:text-right">
-                {isOnlineMode ? "اختر التاريخ والوقت" : "اختر يوم الزيارة"}
+                اختر التاريخ والوقت
               </h2>
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="flex-1 shrink-0">
                   <p className="text-sm font-medium text-gray-700 mb-3 block">
-                    {isOnlineMode ? `المواعيد المتاحة ليوم ${selectedDate || "..."}` : "اختر اليوم وسنحجز دورك تلقائياً"}
+                    المواعيد المتاحة ليوم {selectedDate || "..."}
                   </p>
                   <input
                     type="date"
@@ -512,45 +442,32 @@ export function BookingWizard() {
                   {!selectedDoctor && <p className="text-xs text-red-500 mt-2">يرجى اختيار الطبيب أولاً.</p>}
                 </div>
 
-                {/* Slot picker only for online */}
-                {isOnlineMode && (
-                  <div className="flex-1 place-content-center">
-                    {slots.length === 0 ? (
-                      <div className="text-center p-4 border border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
-                        الرجاء اختيار التاريخ لعرض المواعيد المتاحة.
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {slots.map(s => (
-                          <button
-                            key={s.slotId}
-                            type="button"
-                            disabled={!s.available}
-                            onClick={() => setSelectedSlot(s.time)}
-                            className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                              !s.available ? "bg-gray-50 text-gray-400 border-transparent cursor-not-allowed line-through"
-                              : selectedSlot === s.time ? "bg-primary/5 border-primary text-primary"
-                              : "bg-white border-gray-200 text-gray-700 hover:border-primary/50"
-                            }`}
-                          >
-                            {s.time} {Number(s.time.split(":")[0]) >= 12 ? 'م' : 'ص'}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Queue info for clinic mode */}
-                {!isOnlineMode && selectedDate && expectedTurn !== null && (
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="p-6 bg-primary/5 border border-primary/20 rounded-2xl text-center w-full">
-                      <p className="text-xs font-bold text-on-surface/50 mb-2">دورك المتوقع في الطابور</p>
-                      <p className="text-5xl font-black text-primary">#{expectedTurn}</p>
-                      <p className="text-xs text-on-surface/40 mt-2">سيتم تأكيدك عند الوصول للعيادة</p>
+                {/* Slot picker */}
+                <div className="flex-1 place-content-center">
+                  {slots.length === 0 ? (
+                    <div className="text-center p-4 border border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
+                      الرجاء اختيار التاريخ لعرض المواعيد المتاحة.
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {slots.map(s => (
+                        <button
+                          key={s.slotId}
+                          type="button"
+                          disabled={!s.available}
+                          onClick={() => setSelectedSlot(s.time)}
+                          className={`py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                            !s.available ? "bg-gray-50 text-gray-400 border-transparent cursor-not-allowed line-through"
+                            : selectedSlot === s.time ? "bg-primary/5 border-primary text-primary"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-primary/50"
+                          }`}
+                        >
+                          {s.time} {Number(s.time.split(":")[0]) >= 12 ? 'م' : 'ص'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -578,47 +495,37 @@ export function BookingWizard() {
               </div>
             </div>
 
-            {/* Payment Method — only for online consultations */}
-            {isOnlineMode ? (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-1 h-5 bg-gray-300 rounded-full" />
-                  <h2 className="text-base font-bold text-gray-900">طريقة الدفع</h2>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    
-                    {/* Card Selection */}
-                    <label className={`flex items-center p-3.5 cursor-pointer border-b border-gray-100 transition-colors ${paymentMethodUI === 'card' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
-                        <input type="radio" name="payment" checked={paymentMethodUI === 'card'} onChange={() => setPaymentMethodUI('card')} className="w-4 h-4 accent-primary ml-3" />
-                        <span className="flex-1 font-medium text-sm text-gray-800">بطاقة ائتمان (فيزا / ماستركارد)</span>
-                        <IoCardOutline className="text-primary text-lg" />
-                    </label>
-                    
-                    {/* Fawry Selection */}
-                    <label className={`flex items-center p-3.5 cursor-pointer border-b border-gray-100 transition-colors ${paymentMethodUI === 'fawry' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
-                        <input type="radio" name="payment" checked={paymentMethodUI === 'fawry'} onChange={() => setPaymentMethodUI('fawry')} className="w-4 h-4 accent-primary ml-3" />
-                        <span className="flex-1 font-medium text-sm text-gray-800">فوري (Fawry)</span>
-                        <IoReceiptOutline className="text-amber-600 text-lg" />
-                    </label>
-                    
-                    {/* Wallet Selection */}
-                    <label className={`flex items-center p-3.5 cursor-pointer transition-colors ${paymentMethodUI === 'wallet' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
-                        <input type="radio" name="payment" checked={paymentMethodUI === 'wallet'} onChange={() => setPaymentMethodUI('wallet')} className="w-4 h-4 accent-primary ml-3" />
-                        <span className="flex-1 font-medium text-sm text-gray-800">فودافون كاش</span>
-                        <IoPhonePortraitOutline className="text-red-500 text-lg" />
-                    </label>
+            {/* Payment Method */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-gray-300 rounded-full" />
+                <h2 className="text-base font-bold text-gray-900">طريقة الدفع</h2>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  
+                  {/* Card Selection */}
+                  <label className={`flex items-center p-3.5 cursor-pointer border-b border-gray-100 transition-colors ${paymentMethodUI === 'card' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
+                      <input type="radio" name="payment" checked={paymentMethodUI === 'card'} onChange={() => setPaymentMethodUI('card')} className="w-4 h-4 accent-primary ml-3" />
+                      <span className="flex-1 font-medium text-sm text-gray-800">بطاقة ائتمان (فيزا / ماستركارد)</span>
+                      <IoCardOutline className="text-primary text-lg" />
+                  </label>
+                  
+                  {/* Fawry Selection */}
+                  <label className={`flex items-center p-3.5 cursor-pointer border-b border-gray-100 transition-colors ${paymentMethodUI === 'fawry' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
+                      <input type="radio" name="payment" checked={paymentMethodUI === 'fawry'} onChange={() => setPaymentMethodUI('fawry')} className="w-4 h-4 accent-primary ml-3" />
+                      <span className="flex-1 font-medium text-sm text-gray-800">فوري (Fawry)</span>
+                      <IoReceiptOutline className="text-amber-600 text-lg" />
+                  </label>
+                  
+                  {/* Wallet Selection */}
+                  <label className={`flex items-center p-3.5 cursor-pointer transition-colors ${paymentMethodUI === 'wallet' ? 'bg-primary/5' : 'hover:bg-gray-50'}`}>
+                      <input type="radio" name="payment" checked={paymentMethodUI === 'wallet'} onChange={() => setPaymentMethodUI('wallet')} className="w-4 h-4 accent-primary ml-3" />
+                      <span className="flex-1 font-medium text-sm text-gray-800">فودافون كاش</span>
+                      <IoPhonePortraitOutline className="text-red-500 text-lg" />
+                  </label>
 
-                </div>
               </div>
-            ) : (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                <IoInformationCircleOutline className="text-amber-600 text-xl shrink-0 mt-0.5" />
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-amber-800">الدفع عند الوصول</p>
-                  <p className="text-xs text-amber-600 mt-1">للكشف بالعيادة، يتم الدفع نقداً في العيادة يوم الموعد. لا توجد رسوم خدمة إضافية.</p>
-                </div>
-              </div>
-            )}
+            </div>
 
             {/* Error & Submit */}
             {paymentError && (
@@ -636,7 +543,7 @@ export function BookingWizard() {
                     <span>جاري التجهيز...</span>
                   </>
                 ) : (
-                  isOnlineMode ? "تأكيد الحجز والدفع" : "تأكيد الحجز"
+                  "تأكيد الحجز والدفع"
                 )}
               </button>
               <button type="button" className="px-6 py-3 bg-transparent text-gray-500 font-medium text-sm hover:text-gray-700 transition-colors">إلغاء</button>
@@ -661,25 +568,13 @@ export function BookingWizard() {
 
            <div className="space-y-3 mb-6">
                <div className="flex justify-between items-center text-sm">
-                   <span className="font-medium text-gray-900">{consultationMode === 'online' ? 'أونلاين' : 'في العيادة'}</span>
-                   <span className="text-gray-500 text-xs">نوع الكشف</span>
-               </div>
-               <div className="flex justify-between items-center text-sm">
                    <span className="font-medium text-gray-900">{selectedDate || '—'}</span>
                    <span className="text-gray-500 text-xs">التاريخ</span>
                </div>
-               {isOnlineMode && (
-                 <div className="flex justify-between items-center text-sm">
-                   <span className="font-medium text-gray-900">{selectedSlot || '—'} {selectedSlot && (Number(selectedSlot.split(":")[0]) >= 12 ? 'مساءً' : 'صباحاً')}</span>
-                   <span className="text-gray-500 text-xs">الوقت</span>
-                 </div>
-               )}
-               {!isOnlineMode && expectedTurn !== null && (
-                 <div className="flex justify-between items-center text-sm">
-                   <span className="font-medium text-primary font-black">#{expectedTurn}</span>
-                   <span className="text-gray-500 text-xs">رقم الدور</span>
-                 </div>
-               )}
+               <div className="flex justify-between items-center text-sm">
+                 <span className="font-medium text-gray-900">{selectedSlot || '—'} {selectedSlot && (Number(selectedSlot.split(":")[0]) >= 12 ? 'مساءً' : 'صباحاً')}</span>
+                 <span className="text-gray-500 text-xs">الوقت</span>
+               </div>
            </div>
            
            <div className="h-px w-full bg-gray-100 my-4" />
@@ -714,31 +609,6 @@ export function BookingWizard() {
 
       </div>
 
-      {offlineBookingSuccess && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" />
-          <div className="relative bg-white rounded-[2.5rem] shadow-2xl max-w-sm w-full p-10 text-center z-10 animate-in zoom-in-95 duration-500">
-             <div className="w-24 h-24 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                 <IoCheckmarkCircle className="text-6xl" />
-             </div>
-             <h3 className="text-3xl font-black text-gray-900 mb-3">تم الحجز بنجاح!</h3>
-             <p className="text-gray-500 font-medium leading-relaxed mb-8 px-4">تم تسجيل موعدك بنجاح. يرجى الحضور في الموعد المحدد.</p>
-             
-             <div className="bg-gray-50 rounded-3xl p-6 mb-8 border border-gray-100">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">رقم الدور الخاص بك</p>
-                <p className="text-5xl font-black text-primary">#{expectedTurn}</p>
-             </div>
-
-             <button 
-                 onClick={() => window.location.href = "/patient/appointments"}
-                 className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all active:scale-95"
-             >
-                 عرض مواعيدي
-             </button>
-          </div>
-        </div>
-      )}
-
       {paymentSuccess && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md animate-in fade-in duration-300" />
@@ -749,11 +619,6 @@ export function BookingWizard() {
              <h3 className="text-3xl font-black text-gray-900 mb-3">تم الدفع بنجاح!</h3>
              <p className="text-gray-500 font-medium leading-relaxed mb-8 px-4">تم استلام الدفع وسيتم مراجعة حجزك والموافقة عليه قريباً.</p>
              
-             <div className="bg-gray-50 rounded-3xl p-6 mb-8 border border-gray-100">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">رقم الدور الخاص بك</p>
-                <p className="text-5xl font-black text-primary">#{expectedTurn}</p>
-             </div>
-
              <button 
                  onClick={() => window.location.href = "/patient/appointments"}
                  className="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 transition-all active:scale-95"

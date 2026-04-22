@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/providers/AuthProvider";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 import { MedicalHistory } from "@/domain/entities/MedicalHistory";
 import { FirebaseMedicalHistoryRepository } from "@/data/repositories/FirebaseMedicalHistoryRepository";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
@@ -25,6 +26,7 @@ const NODE_COLORS = [
 
 export default function PatientHistoryPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [history, setHistory] = useState<MedicalHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "recent">("all");
@@ -71,8 +73,8 @@ export default function PatientHistoryPage() {
             <IoDocumentTextOutline className="text-xl text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Medical History</h1>
-            <p className="text-sm text-gray-500">Your clinical journey, sorted by date.</p>
+            <h1 className="text-xl font-bold text-gray-900">{t("medicalHistory.title")}</h1>
+            <p className="text-sm text-gray-500">{t("medicalHistory.subtitle")}</p>
           </div>
         </div>
 
@@ -88,7 +90,7 @@ export default function PatientHistoryPage() {
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {f === "all" ? "All Records" : "Last 3 Months"}
+              {f === "all" ? t("medicalHistory.allRecords") : t("medicalHistory.last3Months")}
             </button>
           ))}
         </div>
@@ -103,7 +105,7 @@ export default function PatientHistoryPage() {
             </div>
             <div>
               <p className="text-xl font-bold text-gray-900">{history.length}</p>
-              <p className="text-[11px] font-medium text-gray-400">Total Records</p>
+              <p className="text-[11px] font-medium text-gray-400">{t("medicalHistory.totalRecords")}</p>
             </div>
           </div>
           <div className="bg-white p-4 border border-gray-100 rounded-xl flex items-center gap-3">
@@ -119,7 +121,7 @@ export default function PatientHistoryPage() {
                     })
                   : "—"}
               </p>
-              <p className="text-[11px] font-medium text-gray-400">First Visit</p>
+              <p className="text-[11px] font-medium text-gray-400">{t("medicalHistory.firstVisit")}</p>
             </div>
           </div>
         </div>
@@ -138,19 +140,19 @@ export default function PatientHistoryPage() {
             <IoDocumentTextOutline className="text-2xl text-gray-400" />
           </div>
           <h3 className="text-lg font-bold text-gray-900 mb-1">
-            {filter === "recent" ? "No recent records" : "No records found"}
+            {filter === "recent" ? t("medicalHistory.noRecentRecords") : t("medicalHistory.noRecordsFound")}
           </h3>
           <p className="text-sm text-gray-500">
             {filter === "recent"
-              ? "No visits in the last 3 months."
-              : "Your medical journey starts with your first consultation."}
+              ? t("medicalHistory.noRecentRecordsDesc")
+              : t("medicalHistory.noRecordsFoundDesc")}
           </p>
           {filter === "recent" && (
             <button
               onClick={() => setFilter("all")}
               className="mt-4 text-primary text-sm font-semibold hover:underline"
             >
-              View All Records
+              {t("medicalHistory.viewAllRecords")}
             </button>
           )}
         </div>
@@ -191,7 +193,7 @@ export default function PatientHistoryPage() {
                         </h3>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">Clinician</p>
+                        <p className="text-[11px] text-gray-400 font-medium mb-0.5">{t("medicalHistory.clinician")}</p>
                         <p className="font-semibold text-gray-900 text-sm">
                           Dr. {record.doctorId.slice(0, 8)}
                         </p>
@@ -202,7 +204,7 @@ export default function PatientHistoryPage() {
                     <div className="bg-gray-50 p-4 rounded-lg mb-3">
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <IoMedkitOutline className="text-primary text-sm" />
-                        <p className="text-[11px] font-semibold text-gray-400">Treatment Plan</p>
+                        <p className="text-[11px] font-semibold text-gray-400">{t("medicalHistory.treatmentPlan")}</p>
                       </div>
                       <p className="text-sm text-gray-900 font-medium">{record.treatment}</p>
                     </div>

@@ -17,15 +17,7 @@ export const AppointmentStatuses = {
 
 export type AppointmentStatus = (typeof AppointmentStatuses)[keyof typeof AppointmentStatuses];
 
-export const ConsultationModes = {
-  ONLINE: "online",
-  OFFLINE: "offline",
-} as const;
-
-export type ConsultationMode = (typeof ConsultationModes)[keyof typeof ConsultationModes];
-
 export const AppointmentTypes = {
-  IN_PERSON: "in_person",
   ONLINE: "online",
 } as const;
 

@@ -25,11 +25,8 @@ export interface AppointmentRepository {
   reschedule(id: string, newDate: Date, slotTime: string, rescheduledBy: string): Promise<string>;
   update(id: string, data: Partial<Appointment>): Promise<void>;
   delete(id: string): Promise<void>;
-  subscribeToQueue(
-    doctorId: string,
-    callback: (appointments: Appointment[]) => void
-  ): () => void;
-  subscribeToClinicQueue(
+  /** Real-time clinic subscription */
+  subscribeToClinicAppointments(
     clinicId: string,
     filters: AppointmentFilters,
     callback: (appointments: Appointment[]) => void

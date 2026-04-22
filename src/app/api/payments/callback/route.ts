@@ -47,49 +47,90 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    console.log("[Paymob Callback] req.url:", req.url);
     const url = new URL(req.url);
     const success = url.searchParams.get("success") === "true";
     const appointmentId = url.searchParams.get("merchant_order_id") || url.searchParams.get("order");
     const transactionId = url.searchParams.get("id");
 
-    if (appointmentId) {
-      const appointmentRef = adminDb.collection(Collections.APPOINTMENTS).doc(appointmentId);
-      const appointmentSnap = await appointmentRef.get();
+    console.log("[Paymob Callback] params:", { success, appointmentId, transactionId });
 
-      if (appointmentSnap.exists) {
-        if (success) {
-          await appointmentRef.update({
-            paymentStatus: "paid",
-            status: "pending_approval",
-            paymentId: String(transactionId),
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-        } else if (!success && appointmentSnap.data()?.paymentStatus !== "paid") {
-          await appointmentRef.update({
-            paymentStatus: "failed",
-            updatedAt: FieldValue.serverTimestamp(),
-          });
+    if (appointmentId) {
+      try {
+        const appointmentRef = adminDb.collection(Collections.APPOINTMENTS).doc(appointmentId);
+        const appointmentSnap = await appointmentRef.get();
+
+        if (appointmentSnap.exists) {
+          if (success) {
+            await appointmentRef.update({
+              paymentStatus: "paid",
+              status: "pending_approval",
+              paymentId: String(transactionId),
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+            console.log("[Paymob Callback] Appointment updated to paid:", appointmentId);
+          } else if (!success && appointmentSnap.data()?.paymentStatus !== "paid") {
+            await appointmentRef.update({
+              paymentStatus: "failed",
+              updatedAt: FieldValue.serverTimestamp(),
+            });
+          }
+        } else {
+          console.log("[Paymob Callback] Appointment not found:", appointmentId);
         }
+      } catch (dbError) {
+        console.error("[Paymob Callback] Firestore error:", dbError);
+        // Continue to redirect even if DB update fails
       }
     }
 
-    // Since this GET request typically happens inside the Paymob iframe when the user clicks 'Return to merchant'
-    // or finishes the 3D secure process, we want to close the iframe or tell the parent window it's done.
+    // Build redirect URL to break out of Paymob iframe
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const fallbackUrl = `${protocol}://${host}`;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || fallbackUrl;
+
+    console.log("[Paymob Callback] baseUrl:", baseUrl);
+
+    const redirectUrl = success && appointmentId
+      ? `${baseUrl}/patient/payment-success?appointmentId=${appointmentId}&transactionId=${transactionId || 'N/A'}`
+      : `${baseUrl}/patient/appointments?payment=failed`;
+
+    // Return HTML that breaks out of iframe and redirects parent page
     const html = `
       <html>
         <head><title>Payment Complete</title></head>
         <body>
           <script>
-            // Try to notify the parent window that payment is complete
-            if (window.parent !== window) {
-              window.parent.postMessage({ type: 'PAYMOB_PAYMENT_COMPLETE', success: ${success} }, '*');
-            } else {
-              window.location.href = '/patient/appointments';
+            try {
+              // Try to redirect the entire page (break out of iframe)
+              if (window.top && window.top !== window) {
+                window.top.location.href = '${redirectUrl}';
+              } else {
+                window.location.href = '${redirectUrl}';
+              }
+            } catch (e) {
+              // Fallback: try postMessage if cross-origin prevents top redirect
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                  type: 'PAYMOB_PAYMENT_COMPLETE',
+                  success: ${success},
+                  appointmentId: '${appointmentId || ''}',
+                  transactionId: '${transactionId || ''}'
+                }, '*');
+              }
+              // Show message in case redirect doesn't work
+              document.body.innerHTML = '<div style="font-family:sans-serif;text-align:center;margin-top:50px;"><h2>${success ? 'Payment Successful' : 'Payment Failed'}</h2><p>Redirecting...</p><p>If not redirected, <a href="${redirectUrl}">click here</a>.</p></div>';
+              // Try redirect again after a short delay
+              setTimeout(function() {
+                window.location.href = '${redirectUrl}';
+              }, 2000);
             }
           </script>
-          <div style="font-family: sans-serif; text-align: center; margin-top: 50px;">
+          <div style="font-family:sans-serif;text-align:center;margin-top:50px;">
             <h2>${success ? 'Payment Successful' : 'Payment Failed'}</h2>
-            <p>You can close this window now or return to your appointments.</p>
+            <p>Please wait while we redirect you...</p>
+            <a href="${redirectUrl}">Click here if you are not redirected</a>
           </div>
         </body>
       </html>
@@ -100,6 +141,8 @@ export async function GET(req: Request) {
     });
   } catch (error: unknown) {
     console.error("Paymob GET callback error:", error);
-    return new Response("Error processing callback", { status: 500 });
+    const errMsg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error stack:", (error as Error)?.stack);
+    return new Response(`Error processing callback: ${errMsg}`, { status: 500 });
   }
 }

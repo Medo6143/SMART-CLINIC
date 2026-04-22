@@ -79,7 +79,8 @@ export class PaymobClient {
       last_name: string;
       email: string;
       phone_number: string;
-    }
+    },
+    redirectUrl?: string
   ): Promise<string> {
     const response = await fetch(`${PAYMOB_BASE_URL}/acceptance/payment_keys`, {
       method: "POST",
@@ -105,6 +106,7 @@ export class PaymobClient {
         },
         currency: "EGP",
         integration_id: integrationId,
+        redirection_url: redirectUrl,
       }),
     });
 

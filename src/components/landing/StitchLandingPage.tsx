@@ -14,8 +14,8 @@ export default function StitchLandingPage() {
             <span className="text-2xl font-black tracking-tighter bg-gradient-to-br from-primary to-primary-container bg-clip-text text-transparent uppercase">Smart Clinic</span>
             <div className={`hidden lg:flex items-center gap-8 font-headline font-bold text-xs uppercase tracking-widest`}>
               <Link className="text-primary border-b-2 border-primary pb-1" href="/">{t('nav.home')}</Link>
-              <Link className="text-on-surface/50 hover:text-primary transition-colors" href="#about">{language === 'ar' ? 'عن الدكتور' : 'About'}</Link>
-              <Link className="text-on-surface/50 hover:text-primary transition-colors" href="#services">{language === 'ar' ? 'الخدمات' : 'Services'}</Link>
+              <Link className="text-on-surface/50 hover:text-primary transition-colors" href="#about">{t('landing.aboutDoctor.title')}</Link>
+              <Link className="text-on-surface/50 hover:text-primary transition-colors" href="#services">{t('landing.servicesTitle')}</Link>
               <Link className="text-on-surface/50 hover:text-primary transition-colors" href="#booking">{t('nav.bookAppointment')}</Link>
             </div>
           </div>
@@ -40,7 +40,7 @@ export default function StitchLandingPage() {
           <div className={`max-w-screen-2xl mx-auto px-8 w-full grid lg:grid-cols-2 gap-16 items-center py-24 ${isRTL ? '' : 'direction-ltr'}`}>
             <div className={`z-10 ${isRTL ? 'order-1 text-right' : 'order-1 text-left'}`}>
               <span className="inline-block px-4 py-1.5 bg-secondary/10 text-secondary rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-                {isRTL ? 'رعاية طبية ذكية' : 'Smart Medical Care'}
+                {t('landing.aboutDoctor.specialty')}
               </span>
               <h1 className="font-headline text-5xl lg:text-7xl font-black text-on-background leading-[1.1] mb-8 uppercase tracking-tighter">
                 {t('landing.heroTitle')}
@@ -77,7 +77,7 @@ export default function StitchLandingPage() {
                   <span className="font-black text-3xl text-on-background tabular-nums">98%</span>
                 </div>
                 <p className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest leading-relaxed">
-                  {isRTL ? 'نسبة رضا المرضى عن خدماتنا الرقمية' : 'Patient satisfaction with digital services'}
+                  {t('landing.heroSubtitle')}
                 </p>
               </div>
             </div>
@@ -100,13 +100,13 @@ export default function StitchLandingPage() {
                 />
               </div>
               <div className={`absolute -bottom-10 ${isRTL ? 'left-10' : 'right-10'} bg-on-surface text-white p-10 rounded-[2rem] shadow-2xl`}>
-                <span className="block text-[10px] font-black uppercase tracking-[0.3em] opacity-60 mb-2">{t('landing.aboutDoctor.experience') || 'Experience'}</span>
-                <span className="text-4xl font-black tabular-nums">+15 {isRTL ? 'سنة' : 'Yrs'}</span>
+                <span className="block text-[10px] font-black uppercase tracking-[0.3em] opacity-60 mb-2">{t('landing.aboutDoctor.experience')}</span>
+                <span className="text-4xl font-black tabular-nums">+15 {t('landing.aboutDoctor.years')}</span>
               </div>
             </div>
             <div className={`lg:col-span-7 order-1 lg:order-2 ${isRTL ? 'text-right' : 'text-left'}`}>
               <span className="inline-block px-4 py-2 bg-primary/5 text-primary rounded-xl text-[10px] font-black uppercase tracking-widest mb-6">
-                {isRTL ? 'استشاري العظام' : 'Orthopedic Consultant'}
+                {t('landing.aboutDoctor.specialty')} {t('landing.aboutDoctor.consultant')}
               </span>
               <h2 className="text-5xl font-black text-on-background mb-8 leading-[1.2] uppercase tracking-tight">
                 {t('landing.aboutDoctor.title')}<br/>

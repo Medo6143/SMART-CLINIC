@@ -1,12 +1,12 @@
 /**
  * Web i18n utility — simple hook wrapping translation files.
- * For full next-intl integration, configure in next.config.ts + middleware.
- * This is a lightweight approach for initial development.
+ * Uses global LanguageProvider for shared state across components.
  */
 
 import en from "./en.json";
 import ar from "./ar.json";
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
+import { useLanguage } from "@/providers/LanguageProvider";
 
 type TranslationKeys = typeof en;
 type Language = "en" | "ar";
@@ -27,34 +27,26 @@ function getNestedValue(obj: Record<string, unknown>, path: string): string {
 }
 
 export function useTranslation() {
-  const [language, setLanguage] = useState<Language>("en");
-  const isRTL = language === "ar";
+  const { language, isRTL, setLanguage, toggleLanguage } = useLanguage();
 
   const t = useCallback(
-    (key: string): string => {
-      return getNestedValue(translations[language] as unknown as Record<string, unknown>, key);
+    (key: string, fallback?: string): string => {
+      const value = getNestedValue(translations[language] as unknown as Record<string, unknown>, key);
+      // Return fallback if provided and key not found (value equals key)
+      if (fallback && value === key) {
+        return fallback;
+      }
+      return value;
     },
     [language]
   );
 
-  const changeLanguage = useCallback((lang: Language) => {
-    setLanguage(lang);
-    if (typeof document !== "undefined") {
-      document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-      document.documentElement.lang = lang;
-    }
-  }, []);
-
-  const toggleLanguage = useCallback(() => {
-    setLanguage((prev) => {
-      const next = prev === "en" ? "ar" : "en";
-      if (typeof document !== "undefined") {
-        document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
-        document.documentElement.lang = next;
-      }
-      return next;
-    });
-  }, []);
+  const changeLanguage = useCallback(
+    (lang: Language) => {
+      setLanguage(lang);
+    },
+    [setLanguage]
+  );
 
   return useMemo(
     () => ({ t, language, isRTL, changeLanguage, toggleLanguage }),

@@ -33,34 +33,13 @@ export class FirebaseAppointmentRepository implements AppointmentRepository {
 
   async create(data: CreateAppointmentInput): Promise<string> {
     const docRef = doc(collection(this.db, this.collectionName));
-    const isOnlineBooking = data.bookingOrigin === "online";
-    const paymentDeadlineAt = isOnlineBooking
-      ? new Date(Date.now() + PAYMENT_DEADLINE_MS).toISOString()
-      : null;
-
-    // Calculate turnNumber
-    const targetDate = data.date instanceof Date ? data.date : new Date(data.date);
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const qCount = query(
-      collection(this.db, this.collectionName),
-      where("doctorId", "==", data.doctorId),
-      where("date", ">=", Timestamp.fromDate(startOfDay)),
-      where("date", "<=", Timestamp.fromDate(endOfDay))
-    );
-    const existingSnap = await getDocs(qCount);
-    const turnNumber = existingSnap.size + 1;
+    const paymentDeadlineAt = new Date(Date.now() + PAYMENT_DEADLINE_MS).toISOString();
 
     const appointment: Appointment = {
       ...data,
       id: docRef.id,
-      turnNumber,
-      // Online bookings start as PENDING until payment; walk-ins go straight to CONFIRMED
-      status: isOnlineBooking ? "pending" : "confirmed",
-      consultationMode: data.consultationMode ?? "offline",
+      // All bookings start as PENDING until payment
+      status: "pending",
       paymentStatus: "unpaid",
       paymentId: null,
       paymentDeadlineAt,
@@ -212,28 +191,7 @@ export class FirebaseAppointmentRepository implements AppointmentRepository {
     await deleteDoc(docRef);
   }
 
-  subscribeToQueue(
-    doctorId: string,
-    callback: (appointments: Appointment[]) => void
-  ): () => void {
-    const colRef = collection(this.db, this.collectionName);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const q = query(
-      colRef,
-      where("doctorId", "==", doctorId),
-      where("date", ">=", Timestamp.fromDate(today)),
-      orderBy("date", "asc")
-    );
-    
-    return onSnapshot(q, (snap) => {
-      const appointments = snap.docs.map(d => this.mapDocToAppointment(d.id, d.data()));
-      callback(appointments);
-    }, () => {});
-  }
-
-  subscribeToClinicQueue(
+  subscribeToClinicAppointments(
     clinicId: string,
     filters: AppointmentFilters,
     callback: (appointments: Appointment[]) => void

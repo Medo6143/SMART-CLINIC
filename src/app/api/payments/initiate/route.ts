@@ -14,6 +14,10 @@ export async function POST(req: Request) {
       );
     }
 
+    // Build redirect URL for Paymob callback
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const redirectUrl = `${baseUrl}/api/payments/callback?merchant_order_id=${appointmentId}`;
+
     // 1. Authenticate with Paymob
     const token = await paymob.authenticate();
 
@@ -26,7 +30,8 @@ export async function POST(req: Request) {
       orderId,
       amount,
       process.env.PAYMOB_INTEGRATION_ID || "",
-      billingData
+      billingData,
+      redirectUrl
     );
 
     return NextResponse.json({ paymentToken });

@@ -8,7 +8,7 @@ import { createGetAllClinicsUseCase } from "@/use-cases/clinics/index";
 import { FirebaseClinicRepository } from "@/data/repositories/FirebaseClinicRepository";
 import { createBookAppointmentUseCase } from "@/use-cases/appointments/PatientAppointmentsUseCase";
 import { FirebaseAppointmentRepository } from "@/data/repositories/FirebaseAppointmentRepository";
-import { AppointmentTypes, AppointmentPriorities, ConsultationModes } from "@/domain/value-objects/AppointmentStatus";
+import { AppointmentTypes, AppointmentPriorities } from "@/domain/value-objects/AppointmentStatus";
 import { generateSlots, getDefaultSchedule, getDefaultClinicHours, type TimeSlot } from "@/lib/slotGeneration";
 
 const clinicRepo = new FirebaseClinicRepository();
@@ -46,7 +46,6 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
   const [currentClinic, setCurrentClinic] = useState<Clinic | null>(null);
 
   // ── Selections
-  const [consultationMode, setConsultationMode] = useState<"online" | "offline">("offline");
   const [selectedClinic, setSelectedClinic] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -61,7 +60,6 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
   const [paymentDeadline, setPaymentDeadline] = useState<string | null>(null);
   const [bookedAppointmentId, setBookedAppointmentId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [clinicBookingDone, setClinicBookingDone] = useState(false);
 
   const { secsLeft, label: countdownLabel } = useCountdown(paymentDeadline);
 
@@ -116,60 +114,14 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
   // ── Submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isOffline = consultationMode === "offline";
-    if (!user || !selectedClinic || !selectedDoctor || !selectedDate) return;
-    if (!isOffline && !selectedSlot) return;
+    if (!user || !selectedClinic || !selectedDoctor || !selectedDate || !selectedSlot) return;
     const doctor = doctors.find((d) => d.uid === selectedDoctor);
     if (!doctor) return;
 
     setIsSubmitting(true);
     try {
       const [yr, mo, dy] = selectedDate.split("-").map(Number);
-      const date = new Date(yr, mo - 1, dy, 9, 0); // For clinic visits, default 9am
       const amount = (currentClinic as any)?.settings?.consultationFee || 500;
-
-      if (isOffline) {
-        // In-clinic: compute queue number and book without payment
-        const dayStart = new Date(yr, mo - 1, dy, 0, 0, 0);
-        const dayEnd = new Date(yr, mo - 1, dy, 23, 59, 59);
-        const sameDay = await appointmentRepo.getByDoctor(selectedDoctor, date);
-        const clinicBookings = sameDay.filter(a =>
-          a.consultationMode !== "online" && a.type !== "online" &&
-          a.status !== "cancelled" && a.status !== "rejected"
-        );
-        const queueNumber = clinicBookings.length + 1;
-        void dayStart; void dayEnd;
-
-        await bookAppointment({
-          patientId: user.uid,
-          patientName: user.displayName || "Unknown Patient",
-          patientPhone: (user as any).phone || "",
-          patientEmail: user.email || "",
-          doctorId: selectedDoctor,
-          doctorName: doctor.displayName || "Unknown Doctor",
-          clinicId: selectedClinic,
-          date,
-          slotTime: undefined,
-          type: AppointmentTypes.IN_PERSON,
-          status: "confirmed",
-          consultationMode: ConsultationModes.OFFLINE,
-          priority: AppointmentPriorities.NORMAL,
-          bookingOrigin: "online",
-          meetLink: null,
-          paymentId: null,
-          paymentStatus: "unpaid",
-          paymentMethod: "cash",
-          amount,
-          paymentDeadlineAt: null,
-          symptoms: symptoms || null,
-          hasPreviousVisit,
-          notes: "",
-          turnNumber: queueNumber,
-        } as never);
-
-        setClinicBookingDone(true);
-        return;
-      }
 
       // Online: time slot required + payment
       const [hr, min] = selectedSlot.split(":").map(Number);
@@ -188,7 +140,6 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
         slotTime: selectedSlot,
         type: AppointmentTypes.ONLINE,
         status: "pending",
-        consultationMode: ConsultationModes.ONLINE,
         priority: AppointmentPriorities.NORMAL,
         bookingOrigin: "online",
         meetLink: null,
@@ -238,56 +189,12 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
     </div>
   );
 
-  if (clinicBookingDone) return (
-    <div className="py-16 flex flex-col items-center gap-6 text-center">
-      <div className="w-20 h-20 rounded-3xl bg-green-50 flex items-center justify-center">
-        <span className="material-symbols-outlined text-4xl text-green-600">check_circle</span>
-      </div>
-      <div>
-        <h3 className="font-black text-xl text-on-surface mb-1">Clinic Visit Booked!</h3>
-        <p className="text-sm text-on-surface/50">Your queue number has been assigned. Please arrive at the clinic on your selected date.</p>
-      </div>
-      <button
-        onClick={onComplete}
-        className="px-8 py-3 bg-primary text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary/90 transition-all"
-      >
-        View My Appointments
-      </button>
-    </div>
-  );
-
-  const isOffline = consultationMode === "offline";
-  const canSubmit = selectedClinic && selectedDoctor && selectedDate && (isOffline || selectedSlot) && !isSubmitting;
+  const canSubmit = selectedClinic && selectedDoctor && selectedDate && selectedSlot && !isSubmitting;
   const minDate = new Date(); minDate.setDate(minDate.getDate() + 1);
 
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
-
-        {/* ── Consultation Mode */}
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-on-surface/40 mb-3">Consultation Mode</p>
-          <div className="grid grid-cols-2 gap-3">
-            {([
-              { id: "offline", icon: "local_hospital", label: "In-Clinic Visit" },
-              { id: "online",  icon: "videocam",       label: "Online Consultation" },
-            ] as const).map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setConsultationMode(m.id)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all font-black text-xs uppercase tracking-widest ${
-                  consultationMode === m.id
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-outline-variant/20 text-on-surface/50 hover:border-primary/40"
-                }`}
-              >
-                <span className="material-symbols-outlined text-2xl">{m.icon}</span>
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* ── Clinic */}
         <div>
@@ -358,12 +265,11 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
           )}
         </div>
 
-        {/* ── Slots (only for online consultations) */}
-        {consultationMode === "online" && (
-          <div>
-            <label className="block text-xs font-black uppercase tracking-widest text-on-surface/40 mb-3">
-              Available Slots{slots.length > 0 && <span className="text-secondary ml-2">({slots.filter(s => s.available).length} open)</span>}
-            </label>
+        {/* ── Slots */}
+        <div>
+          <label className="block text-xs font-black uppercase tracking-widest text-on-surface/40 mb-3">
+            Available Slots{slots.length > 0 && <span className="text-secondary ml-2">({slots.filter(s => s.available).length} open)</span>}
+          </label>
             {!selectedDate ? (
               <div className="p-4 rounded-xl border-2 border-dashed border-outline-variant/20 text-xs text-on-surface/30 text-center">
                 Select a date to see available slots
@@ -391,21 +297,9 @@ export function BookAppointmentForm({ onComplete }: { onComplete: () => void }) 
                 ))}
               </div>
             )}
-          </div>
-        )}
+        </div>
 
-        {/* ── In-Clinic Queue Info */}
-        {consultationMode === "offline" && selectedDate && (
-          <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center gap-3">
-            <span className="material-symbols-outlined text-indigo-500 text-2xl">queue</span>
-            <div>
-              <p className="text-xs font-black text-indigo-700 uppercase tracking-wide">Walk-in Queue</p>
-              <p className="text-xs text-indigo-600">You will receive a queue number upon confirmation. No specific time needed — just arrive at the clinic on your selected date.</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── Symptoms (always visible) */}
+        {/* ── Symptoms */}
         <div className="space-y-4 p-5 bg-surface-container-low/50 rounded-2xl border border-outline-variant/10">
           <div>
             <label className="block text-xs font-black uppercase tracking-widest text-on-surface/40 mb-2">

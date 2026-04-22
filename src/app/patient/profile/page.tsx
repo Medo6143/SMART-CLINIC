@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/providers/AuthProvider";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 import { useState } from "react";
 import {
   getAuth,
@@ -22,6 +23,7 @@ const db = getFirestore(app);
 
 export default function PatientProfilePage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.displayName || "");
   const [phone, setPhone] = useState(user?.phone || "");
@@ -65,11 +67,11 @@ export default function PatientProfilePage() {
     e.preventDefault();
     setPasswordError(null);
     if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords do not match.");
+      setPasswordError(t("profile.passwordsNotMatch"));
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters.");
+      setPasswordError(t("profile.passwordTooShort"));
       return;
     }
     setIsChangingPassword(true);
@@ -87,7 +89,7 @@ export default function PatientProfilePage() {
       setShowPasswordForm(false);
       setTimeout(() => setPasswordSuccess(false), 4000);
     } catch {
-      setPasswordError("Current password is incorrect. Please try again.");
+      setPasswordError(t("profile.currentPasswordIncorrect"));
     } finally {
       setIsChangingPassword(false);
     }
@@ -101,8 +103,8 @@ export default function PatientProfilePage() {
           <IoPersonOutline className="text-xl text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Profile</h1>
-          <p className="text-sm text-gray-500">Manage your personal information and security.</p>
+          <h1 className="text-xl font-bold text-gray-900">{t("profile.title")}</h1>
+          <p className="text-sm text-gray-500">{t("profile.subtitle")}</p>
         </div>
       </div>
 
@@ -110,13 +112,13 @@ export default function PatientProfilePage() {
       {saveSuccess && (
         <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2">
           <IoCheckmarkCircleOutline className="text-lg" />
-          Profile updated successfully!
+          {t("profile.profileUpdated")}
         </div>
       )}
       {passwordSuccess && (
         <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-2">
           <IoLockClosedOutline className="text-lg" />
-          Password changed successfully!
+          {t("profile.passwordChanged")}
         </div>
       )}
 
@@ -130,20 +132,20 @@ export default function PatientProfilePage() {
             <h2 className="text-lg font-bold text-gray-900 mb-0.5">
               {name || user?.displayName || "Patient"}
             </h2>
-            <p className="text-xs font-semibold text-primary mb-5">Registered Patient</p>
+            <p className="text-xs font-semibold text-primary mb-5">{t("profile.registeredPatient")}</p>
             <div className="w-full pt-4 border-t border-gray-100 space-y-3">
               <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>Account ID</span>
+                <span>{t("profile.accountId")}</span>
                 <span className="text-gray-900 font-medium font-mono text-[11px]">
                   #{user?.uid.slice(0, 6)}...
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>Role</span>
+                <span>{t("profile.role")}</span>
                 <span className="text-gray-900 font-medium capitalize">{user?.role}</span>
               </div>
               <div className="flex justify-between items-center text-xs text-gray-500">
-                <span>Language</span>
+                <span>{t("profile.language")}</span>
                 <span className="text-gray-900 font-medium uppercase">{user?.languagePrefs || "EN"}</span>
               </div>
             </div>
@@ -155,7 +157,7 @@ export default function PatientProfilePage() {
           {/* Identity Details */}
           <div className="bg-white p-6 border border-gray-100 rounded-xl">
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-50">
-              <h3 className="text-base font-bold text-gray-900">Identity Details</h3>
+              <h3 className="text-base font-bold text-gray-900">{t("profile.identityDetails")}</h3>
               <button
                 onClick={() => {
                   if (isEditing) {
@@ -171,13 +173,13 @@ export default function PatientProfilePage() {
                     : "text-primary hover:bg-primary/5"
                 } disabled:opacity-50`}
               >
-                {isSaving ? "Saving..." : isEditing ? "Save Changes" : "Edit Profile"}
+                {isSaving ? t("profile.saving") : isEditing ? t("profile.saveChanges") : t("profile.editProfile")}
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">Full Name</label>
+                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">{t("profile.fullName")}</label>
                 {isEditing ? (
                   <input
                     type="text"
@@ -190,11 +192,11 @@ export default function PatientProfilePage() {
                 )}
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">Email Address</label>
+                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">{t("profile.emailAddress")}</label>
                 <p className="font-medium text-gray-900 truncate">{user?.email || "N/A"}</p>
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">Phone Number</label>
+                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">{t("profile.phoneNumber")}</label>
                 {isEditing ? (
                   <input
                     type="tel"
@@ -204,11 +206,11 @@ export default function PatientProfilePage() {
                     className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-primary/30 focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm font-medium text-gray-900"
                   />
                 ) : (
-                  <p className="font-medium text-gray-900">{phone || user?.phone || "Not set"}</p>
+                  <p className="font-medium text-gray-900">{phone || user?.phone || t("profile.notSet")}</p>
                 )}
               </div>
               <div>
-                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">Member Since</label>
+                <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">{t("profile.memberSince")}</label>
                 <p className="font-medium text-gray-900">
                   {user?.createdAt
                     ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
@@ -223,7 +225,7 @@ export default function PatientProfilePage() {
                   onClick={() => setIsEditing(false)}
                   className="text-gray-500 text-xs font-semibold hover:text-gray-900 transition-colors"
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
@@ -234,14 +236,14 @@ export default function PatientProfilePage() {
             <div className="relative z-10">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                 <div>
-                  <h3 className="text-base font-bold mb-1">Security & Access</h3>
-                  <p className="text-gray-400 text-sm">Keep your account safe with a strong password.</p>
+                  <h3 className="text-base font-bold mb-1">{t("profile.securityAccess")}</h3>
+                  <p className="text-gray-400 text-sm">{t("profile.securityDesc")}</p>
                 </div>
                 <button
                   onClick={() => setShowPasswordForm(!showPasswordForm)}
                   className="px-5 py-2.5 bg-white text-gray-900 rounded-lg font-semibold text-xs hover:scale-[1.02] active:scale-95 transition-all shrink-0"
                 >
-                  {showPasswordForm ? "Cancel" : "Change Password"}
+                  {showPasswordForm ? t("common.cancel") : t("profile.changePassword")}
                 </button>
               </div>
 
@@ -254,9 +256,9 @@ export default function PatientProfilePage() {
                     </p>
                   )}
                   {[
-                    { label: "Current Password", value: currentPassword, setter: setCurrentPassword },
-                    { label: "New Password", value: newPassword, setter: setNewPassword },
-                    { label: "Confirm New Password", value: confirmPassword, setter: setConfirmPassword },
+                    { label: t("profile.currentPassword"), value: currentPassword, setter: setCurrentPassword },
+                    { label: t("profile.newPassword"), value: newPassword, setter: setNewPassword },
+                    { label: t("profile.confirmNewPassword"), value: confirmPassword, setter: setConfirmPassword },
                   ].map((field) => (
                     <div key={field.label}>
                       <label className="text-[11px] font-medium text-gray-400 mb-1.5 block">
@@ -277,7 +279,7 @@ export default function PatientProfilePage() {
                     disabled={isChangingPassword}
                     className="w-full py-2.5 bg-primary text-white rounded-lg font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 mt-1"
                   >
-                    {isChangingPassword ? "Updating..." : "Update Password"}
+                    {isChangingPassword ? t("profile.updating") : t("profile.updatePassword")}
                   </button>
                 </form>
               )}

@@ -5,6 +5,7 @@ import { RoleGuard } from "@/guards/RoleGuard";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/providers/AuthProvider";
+import { LanguageProvider } from "@/providers/LanguageProvider";
 import {
   IoGridOutline,
   IoCalendarOutline,
@@ -85,12 +86,14 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
   return (
     <AuthGuard>
       <RoleGuard allowedRoles={["doctor"]}>
-        <div className="flex h-screen w-full bg-gray-50">
-          <DoctorSidebar />
-          <main className="flex-1 overflow-y-auto p-6 md:p-8">
-            {children}
-          </main>
-        </div>
+        <LanguageProvider>
+          <div className="flex h-screen w-full bg-gray-50">
+            <DoctorSidebar />
+            <main className="flex-1 overflow-y-auto p-6 md:p-8">
+              {children}
+            </main>
+          </div>
+        </LanguageProvider>
       </RoleGuard>
     </AuthGuard>
   );
