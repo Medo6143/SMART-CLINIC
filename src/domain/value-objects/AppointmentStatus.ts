@@ -31,6 +31,13 @@ export const AppointmentPriorities = {
 
 export type AppointmentPriority = (typeof AppointmentPriorities)[keyof typeof AppointmentPriorities];
 
+export const ConsultationModes = {
+  ONLINE: "online",
+  OFFLINE: "offline",
+} as const;
+
+export type ConsultationMode = (typeof ConsultationModes)[keyof typeof ConsultationModes];
+
 export function isTerminalStatus(status: AppointmentStatus): boolean {
   return (
     status === AppointmentStatuses.COMPLETED ||

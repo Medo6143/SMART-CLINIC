@@ -14,7 +14,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace(`/auth/login?returnUrl=${encodeURIComponent(pathname)}`);
+      router.replace(`/auth/login?returnUrl=${encodeURIComponent(pathname || "/")}`);
     }
   }, [user, isLoading, router, pathname]);
 

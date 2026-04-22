@@ -11,7 +11,8 @@ const COMMON_SIDE_EFFECTS = ["غثيان", "صداع", "دوخة", "إرهاق",
 const COMMON_NEW_SYMPTOMS = ["ألم جديد", "ارتفاع حرارة", "ضيق تنفس", "طفح جلدي", "تورم", "فقدان شهية"];
 
 export default function FollowUpPage() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   const [followUp, setFollowUp] = useState<FollowUp | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);

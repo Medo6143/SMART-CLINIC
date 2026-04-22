@@ -31,4 +31,9 @@ export interface AppointmentRepository {
     filters: AppointmentFilters,
     callback: (appointments: Appointment[]) => void
   ): () => void;
+  /** Real-time doctor queue subscription */
+  subscribeToQueue(
+    doctorId: string,
+    callback: (appointments: Appointment[]) => void
+  ): () => void;
 }

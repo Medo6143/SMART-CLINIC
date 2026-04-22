@@ -1,4 +1,4 @@
-import type { AppointmentStatus, AppointmentType, AppointmentPriority } from "../value-objects/AppointmentStatus";
+import type { AppointmentStatus, AppointmentType, AppointmentPriority, ConsultationMode } from "../value-objects/AppointmentStatus";
 
 export interface Appointment {
   id: string;
@@ -11,6 +11,7 @@ export interface Appointment {
   doctorName?: string;
   clinicId: string;
   type: AppointmentType;
+  consultationMode: ConsultationMode;
   status: AppointmentStatus;
   priority: AppointmentPriority;
   bookingOrigin: "online";

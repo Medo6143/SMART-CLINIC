@@ -212,6 +212,21 @@ export class FirebaseAppointmentRepository implements AppointmentRepository {
     }, () => {});
   }
 
+  subscribeToQueue(doctorId: string, callback: (appointments: Appointment[]) => void): () => void {
+    const colRef = collection(this.db, this.collectionName);
+    const q = query(
+      colRef,
+      where("doctorId", "==", doctorId),
+      where("status", "in", ["confirmed", "in_progress"]),
+      orderBy("date", "asc")
+    );
+
+    return onSnapshot(q, (snap) => {
+      const appointments = snap.docs.map(d => this.mapDocToAppointment(d.id, d.data()));
+      callback(appointments);
+    }, () => {});
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private mapDocToAppointment(id: string, data: Record<string, any>): Appointment {
     return {

@@ -216,6 +216,7 @@ export function BookingWizard() {
         date,
         slotTime: selectedSlot,
         type: AppointmentTypes.ONLINE,
+        consultationMode: "online" as const,
         status: "pending" as const,
         priority: AppointmentPriorities.NORMAL,
         bookingOrigin: "online" as const,
